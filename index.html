@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Query Form</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button.voteButton {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button.voteButton:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>2IM Voting</h1>
+    <form id="queryForm">
+        <label for="idInput">Enter Token:</label>
+        <input type="number" id="idInput" name="id" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <div id="result1"></div>
+    <div id="result2"></div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('idInput').value;
+
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data.result1, 'result1');
+
+                displayResultsWithVote(data.result2, 'result2');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result1').textContent = 'An error occurred while processing your request OR you have already voted.';
+                document.getElementById('result2').textContent = 'An error occurred while processing your request OR you have already voted.';
+            });
+        });
+
+        function displayResults(data, resultDivId) {
+            const resultDiv = document.getElementById(resultDivId);
+            resultDiv.innerHTML = '';
+
+            if (data.length > 0) {
+                const table = document.createElement('table');
+                const headerRow = document.createElement('tr');
+
+                
+                Object.keys(data[0]).forEach(key => {
+                    const th = document.createElement('th');
+                    th.textContent = key;
+                    headerRow.appendChild(th);
+                });
+
+                table.appendChild(headerRow);
+
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+
+                    Object.values(row).forEach(value => {
+                        const td = document.createElement('td');
+                        td.textContent = value;
+                        tr.appendChild(td);
+                    });
+
+                    table.appendChild(tr);
+                });
+
+                resultDiv.appendChild(table);
+            } else {
+                resultDiv.textContent = 'No results found.';
+            }
+        }
+
+        function displayResultsWithVote(data, resultDivId) {
+    const resultDiv = document.getElementById(resultDivId);
+    resultDiv.innerHTML = '';
+
+    if (data.length > 0) {
+        const table = document.createElement('table');
+        const headerRow = document.createElement('tr');
+
+        Object.keys(data[0]).forEach(key => {
+            const th = document.createElement('th');
+            th.textContent = key;
+            headerRow.appendChild(th);
+        });
+
+        table.appendChild(headerRow);
+
+        data.forEach((row, index) => {
+            const tr = document.createElement('tr');
+
+
+            Object.entries(row).forEach(([key, value]) => {
+                const td = document.createElement('td');
+                td.textContent = value;
+                
+                tr.appendChild(td)
+                
+            });
+
+            const voteButton = document.createElement('button');
+            voteButton.textContent = 'Vote';
+            voteButton.classList.add('voteButton');
+            voteButton.addEventListener('click', function() {
+                sendVote(row);
+            });
+
+            const tdVote = document.createElement('td');
+            tdVote.appendChild(voteButton);
+            tr.appendChild(tdVote);
+
+            table.appendChild(tr);
+        });
+
+        resultDiv.appendChild(table);
+    } else {
+        resultDiv.textContent = 'No results found.';
+    }
+}
+
+        function sendVote(rowData) {
+            const id = document.getElementById('idInput').value;
+
+            const dataToSend = {
+                ...rowData,
+                id: id
+            };
+
+            fetch('/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dataToSend)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Vote submitted successfully!');
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while submitting your vote.');
+            });
+        }
+
+    </script>
+</body>
+</html>
